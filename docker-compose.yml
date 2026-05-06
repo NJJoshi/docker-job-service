@@ -1,18 +1,44 @@
 services:
   mongo:
     image: mongo
+    command: ["--config", "/etc/mongo/mongod.conf"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpass
     ports:
       - "${HOST_PORT:-27017}:27017"
     volumes:
-      - /src/test/resources/data:/docker-entrypoint-initdb.d
+      - ./mongod.conf:/etc/mongo/mongod.conf:ro
+      - ./src/test/resources/data:/docker-entrypoint-initdb.d
+      - mongo_data:/data/db
+    networks:
+      - job-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   job-service:
     build: .
     image: job-service
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     ports:
-        - "8080:8080"
+      - "8080:8080"
     profiles:
-        - app
+      - app
+    networks:
+      - job-network
     environment:
-        spring.data.mongodb.uri: "mongodb://job_user:job_password@mongo:27017/job"
+      SPRING_DATA_MONGODB_URI: "mongodb://job_user:job_password@mongo:27017/job?authSource=job&authMechanism=SCRAM-SHA-256"
+      SPRING_PROFILES_ACTIVE: docker
+
+networks:
+  job-network:
+    driver: bridge
+
+volumes:
+  mongo_data:

@@ -1,7 +1,6 @@
 package com.nj.play.docker.jobservice.service;
 
 import com.nj.play.docker.jobservice.dto.JobDto;
-import com.nj.play.docker.jobservice.entity.Job;
 import com.nj.play.docker.jobservice.repository.JobRepository;
 import com.nj.play.docker.jobservice.util.EntityDtoUtil;
 import org.springframework.beans.factory.annotation.Autowired;
